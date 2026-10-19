@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OmniCalc Pro · 全功能科学计算器与单位换算工具</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --display: #090d16;
+      --btn: #334155;
+      --btn-hover: #475569;
+      --accent: #38bdf8;
+      --op: #6366f1;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #090d16 0%, #1e1b4b 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .calc-shell {
+      display: grid;
+      grid-template-columns: 360px 260px;
+      gap: 20px;
+      background: rgba(30, 41, 59, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 24px;
+      padding: 22px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(14px);
+      max-width: 100%;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .header h1 { font-size: 1.05rem; font-weight: 700; color: var(--accent); }
+    .mode-badge {
+      font-size: 0.72rem;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      padding: 3px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    .display-box {
+      background: var(--display);
+      border-radius: 16px;
+      padding: 16px;
+      text-align: right;
+      margin-bottom: 16px;
+      border: 1px solid rgba(255,255,255,0.06);
+      min-height: 98px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      overflow: hidden;
+    }
+    .expr {
+      font-size: 0.9rem;
+      color: var(--muted);
+      min-height: 22px;
+      word-break: break-all;
+    }
+    .result {
+      font-size: 2rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      word-break: break-all;
+    }
+    .keys-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+    button.key {
+      border: none;
+      border-radius: 12px;
+      padding: 13px 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      background: var(--btn);
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.12s, transform 0.08s;
+    }
+    button.key:hover { background: var(--btn-hover); }
+    button.key:active { transform: scale(0.95); }
+    button.key.fn { background: #1e293b; color: #38bdf8; border: 1px solid rgba(56,189,248,0.2); font-size: 0.84rem; }
+    button.key.op { background: rgba(99, 102, 241, 0.25); color: #a5b4fc; }
+    button.key.eq { background: linear-gradient(135deg, #38bdf8, #6366f1); color: #fff; grid-column: span 2; }
+    button.key.danger { background: rgba(239, 68, 68, 0.22); color: #fca5a5; }
+    .history-panel {
+      background: rgba(9, 13, 22, 0.65);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .history-panel h2 {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .clear-hist {
+      font-size: 0.75rem;
+      color: #f87171;
+      cursor: pointer;
+      background: none;
+      border: none;
+    }
+    .history-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 360px;
+    }
+    .hist-item {
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(30, 41, 59, 0.6);
+      cursor: pointer;
+      text-align: right;
+    }
+    .hist-item:hover { background: rgba(56, 189, 248, 0.12); }
+    .hist-item .h-exp { font-size: 0.78rem; color: var(--muted); }
+    .hist-item .h-val { font-size: 1rem; font-weight: 700; color: var(--accent); }
+    @media (max-width: 680px) {
+      .calc-shell { grid-template-columns: 1fr; width: 100%; max-width: 400px; }
+      .history-list { max-height: 140px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="calc-shell">
+    <div>
+      <div class="header">
+        <h1>OmniCalc Scientific</h1>
+        <span class="mode-badge" id="deg-toggle">DEG (角度制)</span>
+      </div>
+      <div class="display-box">
+        <div class="expr" id="expr"></div>
+        <div class="result" id="result">0</div>
+      </div>
+      <div class="keys-grid">
+        <button class="key fn" data-k="sin(">sin</button>
+        <button class="key fn" data-k="cos(">cos</button>
+        <button class="key fn" data-k="tan(">tan</button>
+        <button class="key danger" data-k="AC">AC</button>
+        <button class="key danger" data-k="DEL">⌫</button>
+
+        <button class="key fn" data-k="log(">log</button>
+        <button class="key fn" data-k="ln(">ln</button>
+        <button class="key fn" data-k="sqrt(">√</button>
+        <button class="key fn" data-k="(">(</button>
+        <button class="key fn" data-k=")">)</button>
+
+        <button class="key fn" data-k="^">xʸ</button>
+        <button class="key" data-k="7">7</button>
+        <button class="key" data-k="8">8</button>
+        <button class="key" data-k="9">9</button>
+        <button class="key op" data-k="/">÷</button>
+
+        <button class="key fn" data-k="pi">π</button>
+        <button class="key" data-k="4">4</button>
+        <button class="key" data-k="5">5</button>
+        <button class="key" data-k="6">6</button>
+        <button class="key op" data-k="*">×</button>
+
+        <button class="key fn" data-k="e">e</button>
+        <button class="key" data-k="1">1</button>
+        <button class="key" data-k="2">2</button>
+        <button class="key" data-k="3">3</button>
+        <button class="key op" data-k="-">−</button>
+
+        <button class="key fn" data-k="%">%</button>
+        <button class="key" data-k="0">0</button>
+        <button class="key" data-k=".">.</button>
+        <button class="key eq" data-k="=">=</button>
+        <button class="key op" data-k="+">+</button>
+      </div>
+    </div>
+
+    <div class="history-panel">
+      <h2>
+        <span>计算历史记录</span>
+        <button class="clear-hist" id="clear-hist">清空</button>
+      </h2>
+      <div class="history-list" id="history-list"></div>
+    </div>
+  </div>
+
+  <script>
+    let current = '';
+    let isDeg = true;
+    let history = JSON.parse(localStorage.getItem('omnicalc_hist') || '[]');
+
+    const exprEl = document.getElementById('expr');
+    const resEl = document.getElementById('result');
+    const histEl = document.getElementById('history-list');
+    const degBtn = document.getElementById('deg-toggle');
+
+    function renderHistory() {
+      if (!history.length) {
+        histEl.innerHTML = '<div style="color:#64748b;font-size:0.8rem;text-align:center;margin-top:24px;">暂无历史记录</div>';
+        return;
+      }
+      histEl.innerHTML = history.map((h, idx) => `
+        <div class="hist-item" data-idx="${idx}">
+          <div class="h-exp">${h.expr} =</div>
+          <div class="h-val">${h.val}</div>
+        </div>
+      `).join('');
+      histEl.querySelectorAll('.hist-item').forEach(el => {
+        el.addEventListener('click', () => {
+          current = String(history[el.dataset.idx].val);
+          resEl.textContent = current;
+        });
+      });
+    }
+
+    function evaluateExpression(raw) {
+      if (!raw.trim()) return '0';
+      const toRad = isDeg ? `(Math.PI/180)*` : '';
+      let parsed = raw
+        .replace(/π|pi/g, 'Math.PI')
+        .replace(/\be\b/g, 'Math.E')
+        .replace(/sin\(/g, `Math.sin(${toRad}`)
+        .replace(/cos\(/g, `Math.cos(${toRad}`)
+        .replace(/tan\(/g, `Math.tan(${toRad}`)
+        .replace(/log\(/g, 'Math.log10(')
+        .replace(/ln\(/g, 'Math.log(')
+        .replace(/sqrt\(/g, 'Math.sqrt(')
+        .replace(/\^/g, '**')
+        .replace(/%/g, '/100');
+
+      const openCount = (parsed.match(/\(/g) || []).length;
+      const closeCount = (parsed.match(/\)/g) || []).length;
+      if (openCount > closeCount) {
+        parsed += ')'.repeat(openCount - closeCount);
+      }
+      const val = Function('"use strict"; return (' + parsed + ')')();
+      if (!Number.isFinite(val)) return 'Error';
+      return Number(Math.round(Number(val + 'e12')) + 'e-12').toString();
+    }
+
+    function handleKey(k) {
+      if (k === 'AC') {
+        current = '';
+        exprEl.textContent = '';
+        resEl.textContent = '0';
+      } else if (k === 'DEL') {
+        current = current.slice(0, -1);
+        resEl.textContent = current || '0';
+      } else if (k === '=') {
+        if (!current) return;
+        try {
+          const ans = evaluateExpression(current);
+          exprEl.textContent = current + ' =';
+          resEl.textContent = ans;
+          if (ans !== 'Error') {
+            history.unshift({ expr: current, val: ans });
+            history = history.slice(0, 25);
+            localStorage.setItem('omnicalc_hist', JSON.stringify(history));
+            renderHistory();
+            current = ans;
+          }
+        } catch {
+          resEl.textContent = 'Error';
+        }
+      } else {
+        current += k;
+        resEl.textContent = current;
+      }
+    }
+
+    document.querySelectorAll('button.key').forEach(btn => {
+      btn.addEventListener('click', () => handleKey(btn.dataset.k));
+    });
+
+    degBtn.addEventListener('click', () => {
+      isDeg = !isDeg;
+      degBtn.textContent = isDeg ? 'DEG (角度制)' : 'RAD (弧度制)';
+    });
+
+    document.getElementById('clear-hist').addEventListener('click', () => {
+      history = [];
+      localStorage.removeItem('omnicalc_hist');
+      renderHistory();
+    });
+
+    document.addEventListener('keydown', e => {
+      if (/^[0-9.+\-*/()%^]$/.test(e.key)) handleKey(e.key);
+      else if (e.key === 'Enter') { e.preventDefault(); handleKey('='); }
+      else if (e.key === 'Backspace') handleKey('DEL');
+      else if (e.key === 'Escape') handleKey('AC');
+    });
+
+    renderHistory();
+  </script>
+</body>
+</html>
