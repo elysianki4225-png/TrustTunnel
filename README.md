@@ -10,22 +10,39 @@
 
 ---
 
-## 🚀 一、极速一键部署（适合小白）
+## 🚀 一、极速傻瓜式一键部署命令（直接复制粘贴即可）
 
-### 方式 1：克隆本仓库并一键启动（带 Web 可视化配置界面）
+> **本代码库地址**：[https://github.com/elysianki4225-png/TrustTunnel](https://github.com/elysianki4225-png/TrustTunnel)
 
-```bash
-git clone https://github.com/elysianki4225-png/TrustTunnel.git
-cd TrustTunnel
-chmod +x install.sh issue_cert.sh tt-panel
-bash install.sh --web
-```
-
-也可直接运行交互式菜单选择部署模式：
+### 方式 1：单行命令全自动部署（推荐小白 · 自动拉取仓库并启动 Web 配置面板）
 
 ```bash
-bash install.sh
+bash <(curl -fsSL https://raw.githubusercontent.com/elysianki4225-png/TrustTunnel/main/install.sh)
 ```
+
+或者无交互直接一键部署并启动 Web 图形化配置界面：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/elysianki4225-png/TrustTunnel/main/install.sh | bash -s -- --web
+```
+
+### 方式 2：Git Clone 克隆本仓库一键部署
+
+```bash
+git clone https://github.com/elysianki4225-png/TrustTunnel.git && cd TrustTunnel && chmod +x install.sh issue_cert.sh tt-panel && bash install.sh --web
+```
+
+### 方式 3：单独一键运行 `issue_cert.sh` 申请 `IP.nip.io` 证书
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/elysianki4225-png/TrustTunnel/main/issue_cert.sh | bash -s -- --auto-ip --mode letsencrypt
+```
+
+---
+
+### 📋 交互式安装菜单说明
+
+直接运行 `bash install.sh` 时将显示如下傻瓜式菜单：
 
 ```text
 ======================================================================

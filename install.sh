@@ -13,12 +13,13 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+REPO_URL="https://github.com/elysianki4225-png/TrustTunnel.git"
 PANEL_PORT="${PANEL_PORT:-8880}"
 CAMOUFLAGE_PORT="${CAMOUFLAGE_PORT:-8080}"
 INSTALL_DIR="${INSTALL_DIR:-/opt/trusttunnel-panel}"
 TT_BIN_DIR="${TT_BIN_DIR:-/opt/trusttunnel}"
 CERT_DIR="${CERT_DIR:-/etc/ssl/ip-certs}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || pwd)"
 
 MODE=""
 AUTO_CERT="selfsigned"
@@ -73,16 +74,16 @@ detect_public_ip() {
 }
 
 install_base_deps() {
-  echo -e "${CYAN}=== [1/5] 正在检查并安装基础依赖 (curl, socat, openssl, python3) ===${NC}"
+  echo -e "${CYAN}=== [1/5] 正在检查并安装基础依赖 (curl, git, socat, openssl, python3) ===${NC}"
   if command -v apt-get >/dev/null 2>&1; then
     apt-get update -y >/dev/null 2>&1 || true
-    apt-get install -y curl socat openssl python3 tar >/dev/null 2>&1 || true
+    apt-get install -y curl git socat openssl python3 tar >/dev/null 2>&1 || true
   elif command -v dnf >/dev/null 2>&1; then
-    dnf install -y curl socat openssl python3 tar >/dev/null 2>&1 || true
+    dnf install -y curl git socat openssl python3 tar >/dev/null 2>&1 || true
   elif command -v yum >/dev/null 2>&1; then
-    yum install -y curl socat openssl python3 tar >/dev/null 2>&1 || true
+    yum install -y curl git socat openssl python3 tar >/dev/null 2>&1 || true
   elif command -v apk >/dev/null 2>&1; then
-    apk add --no-cache curl socat openssl python3 tar bash >/dev/null 2>&1 || true
+    apk add --no-cache curl git socat openssl python3 tar bash >/dev/null 2>&1 || true
   fi
 }
 
@@ -114,6 +115,12 @@ install_optional_proxy() {
 
 setup_panel_files() {
   echo -e "${CYAN}=== [3/5] 正在部署 Web 可视化配置面板与 4 套单页伪装站 ===${NC}"
+  if [[ ! -f "$SCRIPT_DIR/panel/server.py" ]]; then
+    echo -e "${CYAN}正在从代码库 ${REPO_URL} 拉取面板与伪装站文件...${NC}"
+    rm -rf "$INSTALL_DIR"
+    git clone --depth 1 "$REPO_URL" "$INSTALL_DIR"
+    SCRIPT_DIR="$INSTALL_DIR"
+  fi
   if [[ "$(id -u)" -eq 0 ]]; then
     mkdir -p "$INSTALL_DIR"
     if [[ "$SCRIPT_DIR" != "$INSTALL_DIR" ]]; then
@@ -217,7 +224,7 @@ if [[ -z "$MODE" ]]; then
   echo "  4) 🎭 安装轻量 Nginx / Caddy 反代并启动 Web 配置面板"
   echo "  0) 退出脚本"
   echo -e "${CYAN}----------------------------------------------------------------------${NC}"
-  read -r -p "请选择操作编号 [默认 1]: " MODE
+  read -r -p "请选择操作编号 [默认 1]: " MODE < /dev/tty || MODE="1"
   MODE="${MODE:-1}"
 fi
 
