@@ -1,0 +1,12 @@
+# TrustTunnel 伪装静态站点 Caddyfile 配置模板
+# 模式一 (推荐)：作为 TrustTunnel [reverse_proxy] 的本地静态伪装源站 (监听 127.0.0.1:8080)
+http://127.0.0.1:8080 {
+    root * {{CAMOUFLAGE_ROOT}}
+    file_server
+    header {
+        -Server
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+    }
+    try_files {path} /index.html
+}

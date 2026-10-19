@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alex Lin · Full-Stack & Distributed Systems Engineer</title>
+  <style>
+    :root {
+      --bg: #0a0f1d;
+      --card: #131c31;
+      --border: #233252;
+      --accent: #38bdf8;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      padding: 40px 18px;
+    }
+    .resume-wrap { max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+    .hero, .section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+    }
+    .hero h1 { font-size: 1.9rem; font-weight: 800; }
+    .hero .role { color: var(--accent); font-weight: 600; margin-top: 4px; }
+    .hero p { color: var(--muted); margin-top: 12px; font-size: 0.95rem; }
+    .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    .badge {
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+    }
+    .section h2 { font-size: 1.15rem; margin-bottom: 16px; color: #f8fafc; border-left: 3px solid var(--accent); padding-left: 10px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .proj-card {
+      background: #0d1424;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .proj-card h3 { font-size: 1rem; color: var(--accent); margin-bottom: 6px; }
+    .proj-card p { font-size: 0.86rem; color: var(--muted); }
+    .timeline-item { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px dashed var(--border); }
+    .timeline-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+    .time-head { display: flex; justify-content: space-between; font-weight: 600; }
+    .time-sub { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <div class="resume-wrap">
+    <section class="hero">
+      <h1>Alex Lin (林哲远)</h1>
+      <div class="role">Senior Cloud Infrastructure & Rust Systems Engineer</div>
+      <p>专注于高性能分布式网络、云原生可观测性与零信任安全架构设计，热爱开源社区与极简工程实践。</p>
+      <div class="badges">
+        <span class="badge">Rust / Tokio</span>
+        <span class="badge">Go / Kubernetes</span>
+        <span class="badge">HTTP/3 & QUIC</span>
+        <span class="badge">TypeScript / React</span>
+        <span class="badge">Linux eBPF</span>
+        <span class="badge">PostgreSQL</span>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>开源项目与代表作 (Featured Projects)</h2>
+      <div class="grid-2">
+        <div class="proj-card">
+          <h3>EdgePulse Gateway</h3>
+          <p>基于 Rust 与 QUIC 协议构建的低延迟边缘网关，支持动态证书热加载与自适应拥塞控制。</p>
+        </div>
+        <div class="proj-card">
+          <h3>MetricStream Collector</h3>
+          <p>轻量级 Prometheus 指标聚合与实时可视化探针，单节点支持每秒 50 万级时间序列写入。</p>
+        </div>
+        <div class="proj-card">
+          <h3>NeonBlocks & OmniCalc</h3>
+          <p>零外部依赖的纯前端 Web 小工具合集，采用现代 Canvas 与响应式 CSS Grid 构建。</p>
+        </div>
+        <div class="proj-card">
+          <h3>CloudNote Sync</h3>
+          <p>端到端加密的跨平台 Markdown 知识库同步引擎，支持离线冲突自动合并。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>工作与研究经历 (Experience)</h2>
+      <div class="timeline-item">
+        <div class="time-head">
+          <span>资深基础架构工程师 · CloudCore Labs</span>
+          <span style="color:var(--accent);font-size:0.85rem;">2023 - 至今</span>
+        </div>
+        <div class="time-sub">主导全球多区域边缘接入网架构演进，将跨洋传输尾延迟降低 38%。</div>
+      </div>
+      <div class="timeline-item">
+        <div class="time-head">
+          <span>全栈研发工程师 · NextWave Studio</span>
+          <span style="color:var(--accent);font-size:0.85rem;">2020 - 2023</span>
+        </div>
+        <div class="time-sub">负责高并发微服务网关与开发者自动化运维平台的设计与交付。</div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

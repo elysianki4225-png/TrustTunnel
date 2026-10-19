@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FocusFlow · 个人待办事项与番茄专注工作台</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card: #161f33;
+      --border: #26334d;
+      --accent: #10b981;
+      --accent2: #3b82f6;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at top right, #1e293b, var(--bg));
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 20px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    }
+    h1 { font-size: 1.4rem; margin-bottom: 4px; }
+    .sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 18px; }
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .input-row input, .input-row select {
+      background: #0d1424;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 11px 14px;
+      font-size: 0.92rem;
+    }
+    .input-row input { flex: 1; }
+    .btn {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .filters {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .chip {
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      background: #0d1424;
+      color: var(--muted);
+      cursor: pointer;
+      border: 1px solid var(--border);
+    }
+    .chip.active { background: rgba(16, 185, 129, 0.18); color: #34d399; border-color: #10b981; }
+    .task-list { display: flex; flex-direction: column; gap: 10px; }
+    .task-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: #0d1424;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .task-item.done .task-title { text-decoration: line-through; color: var(--muted); }
+    .task-left { display: flex; align-items: center; gap: 12px; }
+    .tag {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: rgba(59, 130, 246, 0.18);
+      color: #60a5fa;
+    }
+    .del-btn {
+      background: none;
+      border: none;
+      color: #f87171;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .timer-display {
+      font-size: 3rem;
+      font-weight: 800;
+      text-align: center;
+      margin: 18px 0;
+      color: #34d399;
+      font-variant-numeric: tabular-nums;
+    }
+    .timer-Controls { display: flex; gap: 10px; justify-content: center; }
+    @media (max-width: 760px) {
+      .container { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>FocusFlow 待办清单</h1>
+      <p class="sub">GTD 个人效率与每日任务追踪系统</p>
+      <div class="input-row">
+        <input type="text" id="task-input" placeholder="添加新的待办事项，按回车保存..." />
+        <select id="task-cat">
+          <option value="工作">工作</option>
+          <option value="学习">学习</option>
+          <option value="生活">生活</option>
+        </select>
+        <button class="btn" id="add-btn">添加</button>
+      </div>
+      <div class="filters">
+        <span class="chip active" data-f="all">全部</span>
+        <span class="chip" data-f="active">进行中</span>
+        <span class="chip" data-f="done">已完成</span>
+      </div>
+      <div class="task-list" id="task-list"></div>
+    </div>
+
+    <div class="card">
+      <h1>番茄专注时钟</h1>
+      <p class="sub">25 分钟沉浸式专注工作法</p>
+      <div class="timer-display" id="timer">25:00</div>
+      <div class="timer-Controls">
+        <button class="btn" id="t-start">开始专注</button>
+        <button class="btn" style="background:#334155;" id="t-reset">重置</button>
+      </div>
+      <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);font-size:0.85rem;color:var(--muted);">
+        <div>今日已完成任务：<strong style="color:#34d399" id="done-count">0</strong> 项</div>
+        <div style="margin-top:6px;">待处理任务：<strong style="color:#60a5fa" id="todo-count">0</strong> 项</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const defaultTasks = [
+      { id: 1, title: '阅读系统架构技术文档与周报整理', cat: '工作', done: false },
+      { id: 2, title: '完成算法刷题与 Rust 异步网络编程笔记', cat: '学习', done: true },
+      { id: 3, title: '傍晚 5 公里慢跑与力量训练', cat: '生活', done: false }
+    ];
+    let tasks = JSON.parse(localStorage.getItem('focusflow_tasks') || JSON.stringify(defaultTasks));
+    let filter = 'all';
+
+    function save() {
+      localStorage.setItem('focusflow_tasks', JSON.stringify(tasks));
+      render();
+    }
+
+    function render() {
+      const list = document.getElementById('task-list');
+      const filtered = tasks.filter(t => filter === 'all' ? true : filter === 'done' ? t.done : !t.done);
+      list.innerHTML = filtered.map(t => `
+        <div class="task-item ${t.done ? 'done' : ''}">
+          <div class="task-left">
+            <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})" />
+            <span class="task-title">${t.title}</span>
+            <span class="tag">${t.cat}</span>
+          </div>
+          <button class="del-btn" onclick="removeTask(${t.id})">删除</button>
+        </div>
+      `).join('');
+      document.getElementById('done-count').textContent = tasks.filter(t => t.done).length;
+      document.getElementById('todo-count').textContent = tasks.filter(t => !t.done).length;
+    }
+
+    window.toggleTask = id => {
+      tasks = tasks.map(t => t.id === id ? { ...t, done: !t.done } : t);
+      save();
+    };
+    window.removeTask = id => {
+      tasks = tasks.filter(t => t.id !== id);
+      save();
+    };
+
+    function addTask() {
+      const inp = document.getElementById('task-input');
+      const cat = document.getElementById('task-cat').value;
+      if (!inp.value.trim()) return;
+      tasks.unshift({ id: Date.now(), title: inp.value.trim(), cat, done: false });
+      inp.value = '';
+      save();
+    }
+
+    document.getElementById('add-btn').addEventListener('click', addTask);
+    document.getElementById('task-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addTask();
+    });
+
+    document.querySelectorAll('.chip').forEach(c => {
+      c.addEventListener('click', () => {
+        document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
+        c.classList.add('active');
+        filter = c.dataset.f;
+        render();
+      });
+    });
+
+    let secs = 25 * 60, timerId = null;
+    const tEl = document.getElementById('timer');
+    const tBtn = document.getElementById('t-start');
+    function fmt(s) {
+      return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    }
+    tBtn.addEventListener('click', () => {
+      if (timerId) {
+        clearInterval(timerId);
+        timerId = null;
+        tBtn.textContent = '继续专注';
+      } else {
+        tBtn.textContent = '暂停';
+        timerId = setInterval(() => {
+          if (secs > 0) { secs--; tEl.textContent = fmt(secs); }
+          else { clearInterval(timerId); timerId = null; tBtn.textContent = '开始专注'; }
+        }, 1000);
+      }
+    });
+    document.getElementById('t-reset').addEventListener('click', () => {
+      clearInterval(timerId); timerId = null; secs = 25 * 60;
+      tEl.textContent = fmt(secs); tBtn.textContent = '开始专注';
+    });
+
+    render();
+  </script>
+</body>
+</html>

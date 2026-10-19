@@ -1,0 +1,44 @@
+#!/bin/bash
+# TrustTunnel 终端快捷管理命令 (tt-panel)
+
+INSTALL_DIR="/opt/trusttunnel-panel"
+if [[ ! -d "$INSTALL_DIR" ]]; then
+  INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
+
+echo "========================================================"
+echo "  TrustTunnel 智控面板快捷管理工具 (tt-panel)"
+echo "========================================================"
+echo "  1) 查看 Web 面板访问地址与运行状态"
+echo "  2) 重启 Web 面板与伪装站点服务"
+echo "  3) 一键申请 / 更新 nip.io Let's Encrypt 证书 (issue_cert.sh)"
+echo "  4) 热重载 TrustTunnel TLS 证书与订阅配置 (SIGHUP)"
+echo "  0) 退出"
+echo "--------------------------------------------------------"
+read -r -p "请输入编号 [1]: " choice
+choice="${choice:-1}"
+
+case "$choice" in
+  1)
+    IP=$(curl -fsSL4 --max-time 4 https://api.ipify.org 2>/dev/null || echo "YOUR_SERVER_IP")
+    echo "Web 配置界面地址: http://${IP}:8880"
+    echo "伪装网站预览地址: http://${IP}:8880/camouflage/active"
+    pgrep -a -f "panel/server.py" || echo "面板未运行"
+    ;;
+  2)
+    systemctl restart trusttunnel-panel 2>/dev/null || {
+      pkill -f "panel/server.py" 2>/dev/null || true
+      nohup python3 "$INSTALL_DIR/panel/server.py" --host 0.0.0.0 --port 8880 --camouflage-port 8080 > "$INSTALL_DIR/panel.log" 2>&1 &
+    }
+    echo "✔ Web 面板已重启"
+    ;;
+  3)
+    bash "$INSTALL_DIR/issue_cert.sh" --auto-ip --mode letsencrypt
+    ;;
+  4)
+    systemctl reload trusttunnel 2>/dev/null || kill -HUP $(pidof trusttunnel_endpoint) 2>/dev/null || echo "已发送热重载指令"
+    ;;
+  *)
+    exit 0
+    ;;
+esac

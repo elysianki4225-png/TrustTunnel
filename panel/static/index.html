@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrustTunnel 智控面板 · 傻瓜式一键配置与高强度抗封锁伪装中心</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Left Sidebar (PC) -->
+    <aside class="sidebar">
+      <div class="brand-box">
+        <div class="brand-logo">TT</div>
+        <div>
+          <div class="brand-title">TrustTunnel</div>
+          <div class="brand-sub">Web 智控与伪装配置中心</div>
+        </div>
+      </div>
+
+      <nav class="nav-list">
+        <button class="nav-btn active" data-tab="tab-wizard">🚀 三步傻瓜式向导</button>
+        <button class="nav-btn" data-tab="tab-users">👥 账号与扫码导出</button>
+        <button class="nav-btn" data-tab="tab-camouflage">🎭 伪装站与 Nginx/Caddy</button>
+        <button class="nav-btn" data-tab="tab-cert">🔒 证书中心 (nip.io)</button>
+        <button class="nav-btn" data-tab="tab-protocol">🛡️ 协议全特性与抗DPI</button>
+        <button class="nav-btn" data-tab="tab-files">📄 配置文件与脚本总览</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="btn btn-emerald" id="save-all-btn" style="width:100%;">💾 保存并应用全部配置</button>
+        <a class="btn btn-secondary btn-sm" href="/camouflage/active" target="_blank" style="text-decoration:none;width:100%;">🌐 新窗口打开当前伪装站</a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-area">
+      <!-- Top Status Header -->
+      <header class="topbar">
+        <div>
+          <h1 style="font-size:1.35rem;font-weight:800;">TrustTunnel 可视化部署与混淆配置面板</h1>
+          <p style="font-size:0.82rem;color:var(--text-secondary);">无需登录 SSH · 已内置最佳抗 DPI 混淆默认配置、nip.io 证书申请与 4 套单页伪装站</p>
+        </div>
+        <div class="status-pills">
+          <span class="pill"><span class="dot" id="st-panel-dot"></span>Web 面板 &amp; 伪装源站: 运行中</span>
+          <span class="pill"><span class="dot" id="st-cert-dot"></span>TLS 证书: <strong id="st-cert-domain">加载中...</strong></span>
+          <span class="pill">混淆预设: <strong id="st-preset-label" style="color:var(--primary);">最强抗 DPI 混淆</strong></span>
+        </div>
+      </header>
+
+      <!-- =================================================================== -->
+      <!-- TAB 1: 三步傻瓜式向导 (Foolproof 3-Step Wizard) -->
+      <!-- =================================================================== -->
+      <section class="tab-pane active" id="tab-wizard">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">✨ 第一步：填写服务器 IP 与一键配置证书 (支持 nip.io 自动域名或自有证书)</div>
+              <div class="card-desc">完全兼容您提供的 <code>issue_cert.sh</code> 逻辑：即使没有购买域名，也能用 <code>IP.nip.io</code> 自动申请 Let's Encrypt ECC 证书或生成免 80 端口自签证书。</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="wiz-detect-ip-btn">🔍 自动检测本机公网 IP</button>
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label>VPS 公网 IP (VPS_IP)</label>
+              <input type="text" id="wiz-vps-ip" placeholder="156.246.95.165" />
+              <span class="hint">填写您的 VPS IP，自动联动生成 nip.io 域名与节点连接地址</span>
+            </div>
+            <div class="field">
+              <label>证书域名 (DOMAIN)</label>
+              <input type="text" id="wiz-domain" placeholder="156.246.95.165.nip.io" />
+              <span class="hint">默认使用 <code>${VPS_IP}.nip.io</code>，也可改为自己的域名</span>
+            </div>
+            <div class="field">
+              <label>证书获取方式</label>
+              <select id="wiz-cert-mode">
+                <option value="letsencrypt">Let's Encrypt 免费证书 (issue_cert.sh / acme.sh)</option>
+                <option value="selfsigned">ECC P-256 极速自签证书 (免 80 端口，自动内嵌至客户端)</option>
+                <option value="custom">使用已有证书路径 (/etc/ssl/ip-certs/ip.crt)</option>
+              </select>
+              <span class="hint">自签证书会自动编码进 tt:// 链接，手机/电脑扫码即用</span>
+            </div>
+          </div>
+          <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn" id="wiz-issue-cert-btn">⚡ 一键申请 / 生成并安装证书</button>
+            <button class="btn btn-secondary" onclick="switchTab('tab-cert')">🔧 高级证书设置与上传自有证书</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🛡️ 第二步：选择抗封锁混淆预设 &amp; 单页面伪装网站</div>
+              <div class="card-desc">面板已为您默认选中混淆效果最好的配置（HTTP/3 QUIC + Chrome HTTP/2 窗口指纹 + 主动探测返回 404 + 真实单页 Web 应用反代伪装）。</div>
+            </div>
+          </div>
+
+          <div style="font-size:0.84rem;font-weight:700;margin-bottom:10px;color:#cbd5e1;">1. 选择协议抗 DPI 混淆等级：</div>
+          <div class="grid-3" style="margin-bottom:18px;">
+            <div class="preset-card selected" data-preset="stealth_max">
+              <span class="preset-badge">默认强烈推荐 · 混淆最强</span>
+              <h4>🛡️ 旗舰抗 DPI 深度混淆模式</h4>
+              <p>开启客户端 Anti-DPI、HTTP/3 QUIC (0-RTT) + Chrome HTTP/2 窗口伪装，非隧道探测请求返回 404 并自动回落至伪装网站。</p>
+            </div>
+            <div class="preset-card" data-preset="quic_turbo">
+              <span class="preset-badge" style="background:rgba(56,189,248,0.2);color:#38bdf8;">大带宽低延迟</span>
+              <h4>⚡ 极速 QUIC / HTTP3 流媒体模式</h4>
+              <p>针对 4K/8K 视频与游戏加速调优 QUIC 32MB 窗口与 1350 MTU，彻底解决 TCP 队头阻塞与断流。</p>
+            </div>
+            <div class="preset-card" data-preset="compat_http2">
+              <span class="preset-badge" style="background:rgba(245,158,11,0.2);color:#fbbf24;">全网络兼容</span>
+              <h4>🌐 高兼容标准 HTTPS (HTTP/2) 模式</h4>
+              <p>适合对 UDP/QUIC 限速的运营商网络，走标准 TCP 443 TLS 1.3 + HTTP/2 多路复用，完全模拟浏览器流量。</p>
+            </div>
+          </div>
+
+          <div style="font-size:0.84rem;font-weight:700;margin-bottom:10px;color:#cbd5e1;">2. 一键选择单页伪装网站（浏览器直接访问节点域名时展示的真实开源单页应用）：</div>
+          <div class="grid-4">
+            <div class="preset-card cam-tpl-card selected" data-tpl="tetris">
+              <h4>🎮 纯前端俄罗斯方块</h4>
+              <p>NeonBlocks 经典街机游戏，支持电脑键盘与手机触屏操作、最高分存储。</p>
+            </div>
+            <div class="preset-card cam-tpl-card" data-tpl="calculator">
+              <h4>🧮 全功能科学计算器</h4>
+              <p>OmniCalc Pro 科学计算器，含三角/对数函数、计算历史纸带与角度切换。</p>
+            </div>
+            <div class="preset-card cam-tpl-card" data-tpl="todo">
+              <h4>✅ 个人待办与番茄钟</h4>
+              <p>FocusFlow 效率工作台，含 GTD 任务分类管理與 25 分钟番茄专注计时器。</p>
+            </div>
+            <div class="preset-card cam-tpl-card" data-tpl="resume">
+              <h4>👨‍💻 极简开发者个人简历</h4>
+              <p>全栈与分布式系统工程师作品集主页，含项目卡片与技术栈展示。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📲 第三步：一键保存并获取客户端连接 (手机扫码 / 电脑导入)</div>
+              <div class="card-desc">支持 iOS / Android 官方 TrustTunnel 客户端、Shadowrocket、Windows / macOS / Linux CLI 与 GUI 客户端。</div>
+            </div>
+            <button class="btn btn-emerald" id="wiz-apply-btn">🚀 立即应用配置并刷新连接码</button>
+          </div>
+
+          <div class="grid-2" style="align-items:center;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:12px;background:var(--bg-input);border-radius:14px;border:1px solid var(--border);">
+              <div class="qr-box" id="wiz-qr-box"></div>
+              <div style="font-size:0.8rem;color:var(--text-secondary);text-align:center;">
+                使用手机 <strong>TrustTunnel App</strong> 或 <strong>Shadowrocket</strong> 扫描二维码一键添加节点
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div class="field">
+                <label>
+                  <span>📦 Deep-Link 一键导入链接 (<code>tt://?</code> 格式 v2)</span>
+                  <button class="btn btn-sm" id="copy-wiz-deeplink">复制 tt:// 链接</button>
+                </label>
+                <div class="code-box" id="wiz-deeplink-text" style="max-height:96px;">加载中...</div>
+              </div>
+
+              <div class="field">
+                <label>
+                  <span>🔗 HTTPS 自动更新订阅地址 (Subscription URL)</span>
+                  <button class="btn btn-secondary btn-sm" id="copy-wiz-sub">复制订阅地址</button>
+                </label>
+                <input type="text" id="wiz-sub-url" readonly />
+              </div>
+
+              <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="btn btn-secondary" id="download-wiz-toml">⬇️ 下载电脑端配置文件 (trusttunnel_client.toml)</button>
+                <a class="btn btn-secondary" href="/camouflage/active" target="_blank" style="text-decoration:none;">👀 预览当前伪装网站</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================== -->
+      <!-- TAB 2: 用户账号与扫码导出 (Users & Client Export) -->
+      <!-- =================================================================== -->
+      <section class="tab-pane" id="tab-users">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">👥 客户端账号管理 (<code>credentials.toml</code>)</div>
+              <div class="card-desc">支持多用户独立鉴权、单用户 HTTP/2 与 HTTP/3 并发连接数限制（防止账号滥用分享），以及独立导出混淆参数。</div>
+            </div>
+            <button class="btn btn-emerald" id="add-user-btn">➕ 新增客户端账号</button>
+          </div>
+
+          <div id="users-list-container" style="display:flex;flex-direction:column;gap:14px;"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🔍 Deep-Link (<code>tt://?</code>) 链接解码与校验工具</div>
+              <div class="card-desc">粘贴任意 <code>tt://?...</code> 链接即可解析其内部二进制 TLV 字段（验证证书内嵌、SNI、Anti-DPI、握手指纹密钥等）。</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="decode-dl-btn">解析链接</button>
+          </div>
+          <div class="field" style="margin-bottom:12px;">
+            <input type="text" id="decode-dl-input" placeholder="粘贴 tt://?... 链接进行解码校验" />
+          </div>
+          <div class="code-box" id="decode-dl-output" style="display:none;"></div>
+        </div>
+      </section>
+
+      <!-- =================================================================== -->
+      <!-- TAB 3: 伪装网站与 Nginx/Caddy 反代中心 (Camouflage & Reverse Proxy) -->
+      <!-- =================================================================== -->
+      <section class="tab-pane" id="tab-camouflage">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🏗️ 反向代理与伪装共存架构选择</div>
+              <div class="card-desc">TrustTunnel 协议原生支持内置反向代理分流，也支持前置轻量级 Nginx 或 Caddy。在面板中一键选择即可自动生成全套配置。</div>
+            </div>
+          </div>
+
+          <div class="grid-3" style="margin-bottom:18px;">
+            <div class="preset-card arch-card selected" data-arch="tt_native_reverse_proxy">
+              <span class="preset-badge">官方原生推荐 · 零性能损耗</span>
+              <h4>方案 A：TrustTunnel 原生反代 + 静态源站</h4>
+              <p>TrustTunnel 监听 443（完整支持 HTTP/3 QUIC 与 TLS ClientRandom 硬件级校验），普通浏览器访问 <code>GET /</code> 自动由内置 <code>[reverse_proxy]</code> 转发给本地 Nginx/Caddy/内置静态站 (127.0.0.1:8080)。</p>
+            </div>
+            <div class="preset-card arch-card" data-arch="nginx_stream_sni">
+              <span class="preset-badge" style="background:rgba(56,189,248,0.2);color:#38bdf8;">前置 Nginx 四层分流</span>
+              <h4>方案 B：前置 Nginx Stream (SNI 分流)</h4>
+              <p>在 TrustTunnel 前面挂轻量级 Nginx (<code>ssl_preread on</code>)，根据 TLS SNI 将 VPN 流量无损透传给 TrustTunnel，其余访问直接返回静态伪装 HTML。</p>
+            </div>
+            <div class="preset-card arch-card" data-arch="caddy_front">
+              <span class="preset-badge" style="background:rgba(168,85,247,0.2);color:#c084fc;">极简 Caddy 托管</span>
+              <h4>方案 C：轻量 Caddy 静态伪装源站</h4>
+              <p>使用极简 Caddy 托管单页面开源 HTML 伪装站点，自动隐藏 Server 响应头并配合 TrustTunnel 反代工作。</p>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="switch-row">
+              <span>启用反向代理伪装保护 (<code>[reverse_proxy]</code>)</span>
+              <input type="checkbox" id="cam-enabled" checked />
+            </div>
+            <div class="field">
+              <label>本地伪装源站地址 (<code>server_address</code>)</label>
+              <input type="text" id="cam-listen-addr" value="127.0.0.1:8080" />
+            </div>
+            <div class="field">
+              <label>反代路径掩码 (<code>path_mask</code>)</label>
+              <input type="text" id="cam-path-mask" value="/" />
+              <span class="hint">设为 <code>/</code> 时，所有浏览器常规网页请求均展示伪装站，而 VPN <code>CONNECT</code> 请求走加密隧道</span>
+            </div>
+            <div class="switch-row">
+              <span>HTTP/3 兼容转换 (<code>h3_backward_compatibility</code>)</span>
+              <input type="checkbox" id="cam-h3-compat" />
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🎨 单页面开源 HTML 伪装项目切换与实时预览</div>
+              <div class="card-desc">内置 4 套完整可交互的单页应用（俄罗斯方块、科学计算器、待办清单、个人简历），支持一键切换或编写自定义 HTML。</div>
+            </div>
+            <a class="btn btn-secondary btn-sm" href="/camouflage/active" target="_blank" style="text-decoration:none;">↗️ 全屏打开当前伪装站</a>
+          </div>
+
+          <div class="grid-4" style="margin-bottom:16px;">
+            <div class="preset-card cam-tpl-card selected" data-tpl="tetris">
+              <h4>🎮 纯前端俄罗斯方块</h4>
+              <p>Canvas 霓虹俄罗斯方块，含计分与触屏手柄</p>
+            </div>
+            <div class="preset-card cam-tpl-card" data-tpl="calculator">
+              <h4>🧮 全功能科学计算器</h4>
+              <p>支持科学函数、表达式括号与历史记录纸带</p>
+            </div>
+            <div class="preset-card cam-tpl-card" data-tpl="todo">
+              <h4>✅ 个人待办事项列表</h4>
+              <p>GTD 待办清单 + 25 分钟番茄工作法计时器</p>
+            </div>
+            <div class="preset-card cam-tpl-card" data-tpl="resume">
+              <h4>👨‍💻 开发者个人简历</h4>
+              <p>全栈工程师个人作品集与项目经历单页</p>
+            </div>
+          </div>
+
+          <div class="field" style="margin-bottom:16px;">
+            <label>
+              <span>或选择自定义单页 HTML 模式：</span>
+              <button class="btn btn-secondary btn-sm" id="use-custom-html-btn">切换为自定义 HTML</button>
+            </label>
+            <textarea id="cam-custom-html" rows="4" placeholder="在此粘贴任意单页 HTML 代码..."></textarea>
+          </div>
+
+          <div class="preview-frame-wrap">
+            <iframe id="cam-preview-iframe" src="/camouflage/tetris" title="伪装站点实时预览"></iframe>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================== -->
+      <!-- TAB 4: SSL/TLS 证书与域名主机 (issue_cert.sh & hosts.toml) -->
+      <!-- =================================================================== -->
+      <section class="tab-pane" id="tab-cert">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🔒 一键证书申请中心 (原生集成 <code>issue_cert.sh</code> 逻辑)</div>
+              <div class="card-desc">支持直接利用 <code>${VPS_IP}.nip.io</code> 免域名申请 Let's Encrypt ECC 证书、免 80 端口自签 ECC 证书或直接粘贴自有证书。</div>
+            </div>
+            <button class="btn" id="cert-run-script-btn">⚡ 立即执行证书生成 / 申请</button>
+          </div>
+
+          <div class="form-grid" style="margin-bottom:16px;">
+            <div class="field">
+              <label>VPS 公网 IP (<code>VPS_IP</code>)</label>
+              <input type="text" id="cert-vps-ip" />
+            </div>
+            <div class="field">
+              <label>IP 泛解析后缀</label>
+              <select id="cert-nip-provider">
+                <option value="nip.io">nip.io (默认推荐: IP.nip.io)</option>
+                <option value="sslip.io">sslip.io (备用: IP.sslip.io)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>证书域名 (<code>DOMAIN</code>)</label>
+              <input type="text" id="cert-domain" />
+            </div>
+            <div class="field">
+              <label>ACME 邮箱 (<code>SSL_EMAIL</code>)</label>
+              <input type="text" id="cert-email" />
+            </div>
+            <div class="field">
+              <label>证书存放目录 (<code>CERT_DIR</code>)</label>
+              <input type="text" id="cert-dir" />
+            </div>
+            <div class="field">
+              <label>证书签发模式</label>
+              <select id="cert-mode">
+                <option value="letsencrypt">Let's Encrypt ECC 证书 (acme.sh standalone)</option>
+                <option value="zerossl">ZeroSSL ECC 证书</option>
+                <option value="selfsigned">OpenSSL Prime256v1 自签名证书 (秒级生成)</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="cert-status-box" class="code-box" style="margin-bottom:14px;">正在读取当前证书 X.509 信息...</div>
+          <div id="cert-exec-log" class="code-box" style="display:none;color:#34d399;"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">📤 上传 / 粘贴自有证书与私钥</div>
+              <div class="card-desc">如果您已有其他平台申请的证书或 Cloudflare 源站证书，可直接粘贴 PEM 内容保存。</div>
+            </div>
+            <button class="btn btn-secondary" id="upload-cert-btn">💾 写入自定义证书</button>
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label>证书链内容 (<code>fullchain.pem</code> / <code>ip.crt</code>)</label>
+              <textarea id="custom-cert-pem" rows="6" placeholder="-----BEGIN CERTIFICATE-----..."></textarea>
+            </div>
+            <div class="field">
+              <label>私钥内容 (<code>privkey.pem</code> / <code>ip.key</code>)</label>
+              <textarea id="custom-key-pem" rows="6" placeholder="-----BEGIN PRIVATE KEY-----..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🌐 TLS 主机与多 SNI 伪装别名配置 (<code>hosts.toml</code>)</div>
+              <div class="card-desc">支持配置主隧道主机 <code>[[main_hosts]]</code>、多 SNI 别名列表 <code>allowed_sni</code>，以及一键发送 <code>SIGHUP</code> 热重载证书。</div>
+            </div>
+            <button class="btn btn-emerald btn-sm" id="hot-reload-hosts-btn">🔄 SIGHUP 无感热重载证书</button>
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label>主 TLS 域名 (<code>main_hosts[0].hostname</code>)</label>
+              <input type="text" id="host-main-hostname" />
+            </div>
+            <div class="field">
+              <label>允许的额外伪装 SNI 列表 (<code>allowed_sni</code>，逗号分隔)</label>
+              <input type="text" id="host-allowed-sni" placeholder="cdn.example.com, static.example.com" />
+              <span class="hint">客户端可使用 <code>custom_sni</code> 发送列表中的任意域名进行 TLS 握手</span>
+            </div>
+            <div class="field">
+              <label>证书链文件路径 (<code>cert_chain_path</code>)</label>
+              <input type="text" id="host-cert-path" />
+            </div>
+            <div class="field">
+              <label>私钥文件路径 (<code>private_key_path</code>)</label>
+              <input type="text" id="host-key-path" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================== -->
+      <!-- TAB 5: 协议全特性与抗 DPI 深度自定义 (vpn.toml & rules.toml) -->
+      <!-- =================================================================== -->
+      <section class="tab-pane" id="tab-protocol">
+        <!-- Connection Filtering & TLS Handshake Obfuscation Rules -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🔐 TLS 握手随机数防探测过滤规则 (<code>rules.toml</code>)</div>
+              <div class="card-desc">支持 TrustTunnel 独有的基于 SNI 派生的 HKDF-SHA256 + AES-128-ECB 握手密钥 (<code>client_random_auth_key</code>) 与掩码前缀 (<code>client_random_prefix</code>)。</div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-secondary btn-sm" id="regen-auth-key-btn">🎲 重新生成 32 位握手密钥</button>
+              <button class="btn btn-sm" id="add-rule-btn">➕ 添加过滤规则</button>
+            </div>
+          </div>
+
+          <div class="form-grid" style="margin-bottom:16px;">
+            <div class="switch-row">
+              <span>启用连接过滤规则引擎 (<code>rules_file = "rules.toml"</code>)</span>
+              <input type="checkbox" id="rules-enabled" checked />
+            </div>
+            <div class="field">
+              <label>默认 SNI 派生握手密钥 (<code>client_random_auth_key</code>)</label>
+              <input type="text" id="rules-default-auth-key" />
+              <span class="hint">证明客户端持有共享密钥，每次握手 ClientRandom 全随机，DPI 无法特征识别</span>
+            </div>
+            <div class="field">
+              <label>默认 ClientRandom 掩码前缀 (<code>client_random_prefix</code>)</label>
+              <input type="text" id="rules-default-prefix" placeholder="a0b0c0d0/f0f0f0f0" />
+              <span class="hint">格式：<code>hex前缀/hex掩码</code>，支持位运算匹配</span>
+            </div>
+          </div>
+
+          <div id="rules-list-container" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </div>
+
+        <!-- Core Settings -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">⚙️ 核心监听、防探测状态码与超时参数 (<code>vpn.toml</code>)</div>
+              <div class="card-desc">精细控制监听端口、IPv6 路由、私有网络隔离、认证失败伪装状态码与并发设备限制。</div>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label>监听地址与端口 (<code>listen_address</code>)</label>
+              <input type="text" id="vpn-listen-address" value="0.0.0.0:443" />
+            </div>
+            <div class="field">
+              <label>CONNECT 认证失败返回码 (<code>auth_failure_status_code</code>)</label>
+              <select id="vpn-auth-code">
+                <option value="407">407 Proxy Auth Required (标准兼容)</option>
+                <option value="404">404 Not Found (隐藏代理特征)</option>
+                <option value="403">403 Forbidden</option>
+                <option value="405">405 Method Not Allowed</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>非 CONNECT 探测返回码 (<code>non_connect_auth_failure_status_code</code>)</label>
+              <select id="vpn-non-connect-code">
+                <option value="404">404 Not Found (推荐：防主动探测识别)</option>
+                <option value="403">403 Forbidden</option>
+                <option value="405">405 Method Not Allowed</option>
+                <option value="407">407 Proxy Auth Required</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>单账号默认最大 HTTP/2 连接数 (<code>default_max_http2_conns_per_client</code>)</label>
+              <input type="number" id="vpn-max-h2" value="32" />
+              <span class="hint">每个客户端默认开启 8 条 H2 连接，设为 32 即约允许 4 台设备同时在线</span>
+            </div>
+            <div class="field">
+              <label>单账号默认最大 HTTP/3 连接数 (<code>default_max_http3_conns_per_client</code>)</label>
+              <input type="number" id="vpn-max-h3" value="8" />
+            </div>
+            <div class="field">
+              <label>TLS 握手超时秒数 (<code>tls_handshake_timeout_secs</code>)</label>
+              <input type="number" id="vpn-tls-timeout" value="10" />
+            </div>
+            <div class="field">
+              <label>客户端监听超时 (<code>client_listener_timeout_secs</code>)</label>
+              <input type="number" id="vpn-listener-timeout" value="600" />
+            </div>
+            <div class="field">
+              <label>目标建连超时 (<code>connection_establishment_timeout_secs</code>)</label>
+              <input type="number" id="vpn-conn-timeout" value="30" />
+            </div>
+            <div class="field">
+              <label>TCP 隧道空闲超时 (<code>tcp_connections_timeout_secs</code>)</label>
+              <input type="number" id="vpn-tcp-timeout" value="604800" />
+            </div>
+            <div class="field">
+              <label>UDP 关联超时 (<code>udp_connections_timeout_secs</code>)</label>
+              <input type="number" id="vpn-udp-timeout" value="300" />
+            </div>
+            <div class="switch-row">
+              <span>启用 IPv6 流量路由 (<code>ipv6_available</code>)</span>
+              <input type="checkbox" id="vpn-ipv6" checked />
+            </div>
+            <div class="switch-row">
+              <span>允许访问服务端私有内网 (<code>allow_private_network_connections</code>)</span>
+              <input type="checkbox" id="vpn-private-net" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Transport Protocols: HTTP/1.1, HTTP/2, QUIC/HTTP/3 -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🚀 传输层协议栈调优：HTTP/1.1 · HTTP/2 (Chrome 指纹) · QUIC / HTTP/3</div>
+              <div class="card-desc">默认值已对齐 Chrome / Firefox 浏览器真实流控窗口参数，使流量与正常网页浏览完全一致。</div>
+            </div>
+          </div>
+
+          <div class="grid-3" style="margin-bottom:16px;">
+            <div class="switch-row">
+              <span>启用 HTTP/1.1 监听 (<code>[listen_protocols.http1]</code>)</span>
+              <input type="checkbox" id="lp-h1-enable" checked />
+            </div>
+            <div class="switch-row">
+              <span>启用 HTTP/2 监听 (<code>[listen_protocols.http2]</code>)</span>
+              <input type="checkbox" id="lp-h2-enable" checked />
+            </div>
+            <div class="switch-row">
+              <span>启用 QUIC / HTTP/3 监听 (<code>[listen_protocols.quic]</code>)</span>
+              <input type="checkbox" id="lp-quic-enable" checked />
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label>H1 上传缓冲区 (<code>upload_buffer_size</code>)</label>
+              <input type="number" id="lp-h1-buf" value="32768" />
+            </div>
+            <div class="field">
+              <label>H2 连接级初始窗口 (<code>initial_connection_window_size</code>)</label>
+              <input type="number" id="lp-h2-conn-win" value="8388608" />
+            </div>
+            <div class="field">
+              <label>H2 流级初始窗口 (<code>initial_stream_window_size</code>)</label>
+              <input type="number" id="lp-h2-stream-win" value="131072" />
+              <span class="hint">Chrome 浏览器特征常量: 131072 (128KB)</span>
+            </div>
+            <div class="field">
+              <label>H2 最大并发流 (<code>max_concurrent_streams</code>)</label>
+              <input type="number" id="lp-h2-streams" value="1000" />
+              <span class="hint">Chrome 浏览器特征常量: 1000</span>
+            </div>
+            <div class="field">
+              <label>H2 最大帧大小 (<code>max_frame_size</code>)</label>
+              <input type="number" id="lp-h2-frame" value="16384" />
+            </div>
+            <div class="field">
+              <label>H2 Header 表大小 (<code>header_table_size</code>)</label>
+              <input type="number" id="lp-h2-header" value="65536" />
+            </div>
+            <div class="field">
+              <label>QUIC 接收 UDP 载荷 (<code>recv_udp_payload_size</code>)</label>
+              <input type="number" id="lp-quic-recv-mtu" value="1350" />
+            </div>
+            <div class="field">
+              <label>QUIC 发送 UDP 载荷 (<code>send_udp_payload_size</code>)</label>
+              <input type="number" id="lp-quic-send-mtu" value="1350" />
+            </div>
+            <div class="field">
+              <label>QUIC 初始最大数据量 (<code>initial_max_data</code>)</label>
+              <input type="number" id="lp-quic-max-data" value="104857600" />
+            </div>
+            <div class="field">
+              <label>QUIC 最大连接窗口 (<code>max_connection_window</code>)</label>
+              <input type="number" id="lp-quic-conn-win" value="25165824" />
+            </div>
+            <div class="field">
+              <label>QUIC 最大流窗口 (<code>max_stream_window</code>)</label>
+              <input type="number" id="lp-quic-stream-win" value="16777216" />
+            </div>
+            <div class="field">
+              <label>QUIC 队列容量 (<code>message_queue_capacity</code>)</label>
+              <input type="number" id="lp-quic-queue" value="4096" />
+            </div>
+            <div class="switch-row">
+              <span>QUIC 启用 0-RTT Early Data (<code>enable_early_data</code>)</span>
+              <input type="checkbox" id="lp-quic-early" checked />
+            </div>
+            <div class="switch-row">
+              <span>QUIC 禁用主动连接迁移 (<code>disable_active_migration</code>)</span>
+              <input type="checkbox" id="lp-quic-migration" checked />
+            </div>
+          </div>
+        </div>
+
+        <!-- Forward Protocol, ICMP, Subscription, Ping/Speedtest, Metrics -->
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">🔀 出站转发协议与链式代理 (<code>[forward_protocol]</code> &amp; <code>[icmp]</code>)</div>
+                <div class="card-desc">支持直接出站 (Direct) 或将流量转发给本地/远程 SOCKS5 代理（如 Cloudflare WARP 解锁 Netflix/ChatGPT 或住宅 IP 落地机）。</div>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label>出站转发模式</label>
+                <select id="fp-mode">
+                  <option value="direct">Direct 直接路由出站 (默认)</option>
+                  <option value="socks5">SOCKS5 链式代理转发 ([forward_protocol.socks5])</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>SOCKS5 代理地址 (<code>address</code>)</label>
+                <input type="text" id="fp-socks5-addr" value="127.0.0.1:1080" />
+              </div>
+              <div class="switch-row">
+                <span>SOCKS5 扩展认证 (<code>extended_auth</code>)</span>
+                <input type="checkbox" id="fp-socks5-auth" />
+              </div>
+              <div class="switch-row">
+                <span>启用 ICMP (Ping) 隧道转发 (<code>[icmp]</code>)</span>
+                <input type="checkbox" id="icmp-enabled" />
+              </div>
+              <div class="field">
+                <label>ICMP 绑定网卡 (<code>interface_name</code>)</label>
+                <input type="text" id="icmp-iface" value="eth0" />
+              </div>
+              <div class="field">
+                <label>ICMP 超时秒数 (<code>request_timeout_secs</code>)</label>
+                <input type="number" id="icmp-timeout" value="3" />
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">📡 订阅服务、测速探针与 Prometheus 监控</div>
+                <div class="card-desc">配置内置 <code>[subscription]</code> 自动下发配置、<code>/ping</code> 与 <code>/speedtest</code> 测速、以及 <code>[metrics]</code> 实时流量统计。</div>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="switch-row">
+                <span>启用 Endpoint 原生订阅 (<code>[subscription]</code>)</span>
+                <input type="checkbox" id="sub-enabled" />
+              </div>
+              <div class="field">
+                <label>订阅路径 (<code>subscription.path</code>)</label>
+                <input type="text" id="sub-path" value="/subscription" />
+              </div>
+              <div class="switch-row">
+                <span>启用 Prometheus 监控指标 (<code>[metrics]</code>)</span>
+                <input type="checkbox" id="metrics-enabled" checked />
+              </div>
+              <div class="switch-row">
+                <span>启用按用户统计流量与在线 IP (<code>per_client_metrics</code>)</span>
+                <input type="checkbox" id="metrics-per-client" checked />
+              </div>
+              <div class="field">
+                <label>Metrics 监听地址 (<code>metrics.address</code>)</label>
+                <input type="text" id="metrics-addr" value="127.0.0.1:1987" />
+              </div>
+              <div class="switch-row">
+                <span>启用主域名 Ping 探针 (<code>ping_enable</code>)</span>
+                <input type="checkbox" id="vpn-ping-enable" />
+              </div>
+              <div class="switch-row">
+                <span>启用主域名测速接口 (<code>speedtest_enable</code>)</span>
+                <input type="checkbox" id="vpn-speedtest-enable" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================== -->
+      <!-- TAB 6: 配置文件与脚本总览 (Generated TOML / Nginx / Caddy / issue_cert.sh) -->
+      <!-- =================================================================== -->
+      <section class="tab-pane" id="tab-files">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">🛠️ 服务运行控制与配置目录</div>
+              <div class="card-desc">当前配置文件自动同步写入：<code id="files-tt-dir">/opt/trusttunnel</code>。修改任何参数点击保存即可生效。</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-sm" onclick="controlService('restart')">🔄 重启 TrustTunnel</button>
+              <button class="btn btn-secondary btn-sm" onclick="controlService('reload_hosts')">⚡ SIGHUP 热重载</button>
+              <button class="btn btn-secondary btn-sm" onclick="controlService('install_endpoint')">⬇️ 安装/更新官方二进制</button>
+            </div>
+          </div>
+          <div id="service-log-box" class="code-box" style="display:none;margin-bottom:12px;color:#34d399;"></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📄 <code>vpn.toml</code> (核心协议配置)</div>
+              <button class="btn btn-secondary btn-sm" onclick="copyText('raw-vpn-toml')">复制</button>
+            </div>
+            <div class="code-box" id="raw-vpn-toml"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📄 <code>hosts.toml</code> (TLS 证书与 SNI 主机)</div>
+              <button class="btn btn-secondary btn-sm" onclick="copyText('raw-hosts-toml')">复制</button>
+            </div>
+            <div class="code-box" id="raw-hosts-toml"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📄 <code>rules.toml</code> (TLS 握手随机数过滤规则)</div>
+              <button class="btn btn-secondary btn-sm" onclick="copyText('raw-rules-toml')">复制</button>
+            </div>
+            <div class="code-box" id="raw-rules-toml"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📄 <code>credentials.toml</code> (用户鉴权配置)</div>
+              <button class="btn btn-secondary btn-sm" onclick="copyText('raw-creds-toml')">复制</button>
+            </div>
+            <div class="code-box" id="raw-creds-toml"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📄 <code>nginx-camouflage.conf</code> / <code>Caddyfile</code></div>
+              <button class="btn btn-secondary btn-sm" onclick="copyText('raw-nginx-conf')">复制 Nginx 配置</button>
+            </div>
+            <div class="code-box" id="raw-nginx-conf"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📄 <code>issue_cert.sh</code> (一键 nip.io 证书脚本)</div>
+              <button class="btn btn-secondary btn-sm" onclick="copyText('raw-issue-cert')">复制脚本</button>
+            </div>
+            <div class="code-box" id="raw-issue-cert"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Navigation -->
+  <nav class="mobile-nav">
+    <button class="active" data-tab="tab-wizard"><span>🚀</span><span>傻瓜向导</span></button>
+    <button data-tab="tab-users"><span>👥</span><span>账号扫码</span></button>
+    <button data-tab="tab-camouflage"><span>🎭</span><span>伪装反代</span></button>
+    <button data-tab="tab-cert"><span>🔒</span><span>证书中心</span></button>
+    <button data-tab="tab-protocol"><span>🛡️</span><span>全参数</span></button>
+    <button data-tab="tab-files"><span>📄</span><span>配置文件</span></button>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/qrcode.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
